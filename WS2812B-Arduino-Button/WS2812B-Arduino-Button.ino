@@ -13,7 +13,6 @@
 #define FASTLED_ALLOW_INTERRUPTS 0
 #include <FastLED.h>
 #include <EEPROM.h>
-FASTLED_USING_NAMESPACE
 
 // Which pin on the Arduino is connected to the NeoPixels?
 // On a Trinket or Gemma we suggest changing this to 1:
@@ -47,7 +46,7 @@ Serial.begin(9600);
 
 
 EEPROM.get(adres[0], mode);
-  if (mode < 0 || mode > 8) {
+  if (mode < 0 || mode > 9) {
     mode = 0; // Ustaw domyślną wartość, jeśli wczytana wartość jest nieprawidłowa
     EEPROM.put(adres[0], mode); // Zapisz domyślną wartość do pamięci EEPROM
   }
@@ -79,11 +78,30 @@ FastLED.setBrightness( BRIGHTNESS );
 boolean checkButton1(){
     buttonState = digitalRead(buttonPin2);
     if (buttonState == HIGH) {
-    if(mode<8)mode++;
-    else mode=0;
-    EEPROM.put(adres[0], mode);
-    delay(500);
-    return true;
+        if(mode<9)mode++; // zmieniono na 9 dla nowego trybu
+        else mode=0;
+        EEPROM.put(adres[0], mode);
+        
+        FastLED.clear();
+        // Wyświetlanie binarne numeru trybu na diodach 150-170
+        // Używamy 4 bitów (tryby od 0 do 9)
+        // Odwrotna kolejność:
+        // bit 0 (najmniej znaczący) na diodach 150-153
+        // bit 1 na 155-158
+        // bit 2 na 160-163
+        // bit 3 (najbardziej znaczący) na 165-168
+        for (int bit = 0; bit < 4; bit++) {
+            bool isSet = (mode & (1 << bit)) != 0;
+            CRGB color = isSet ? CRGB(255, 255, 255) : CRGB(20, 0, 0); // Biały dla 1, ciemnoczerwony dla 0 (jako tło)
+            int startIdx = 150 + bit * 5;
+            for (int i = 0; i < 4; i++) {
+                leds[startIdx + i] = color;
+            }
+        }
+        FastLED.show();
+        delay(1000); // Wyświetlaj przez 1 sekundę
+        
+        return true;
     }
     else return false;
 }
@@ -155,6 +173,37 @@ void loop() {
     case 8:
       partyMode();
       break;
+    case 9:
+      auroraBorealis();
+      break;
+  }
+}
+
+void auroraBorealis() {
+  while (true) {
+    if (checkButton1()) return;
+    
+    uint32_t time = millis();
+    for (int i = 0; i < NUM_LEDS; i++) {
+      // Szum przestrzenny i czasowy do symulacji zorzy polarnej
+      // time / 15 znacznie spowalnia zmiany kolorów
+      uint8_t noise = inoise8(i * 15, time / 15);
+      // Mapowanie szumu na kolory od zielonego (ok. 90) do niebieskiego (ok. 160)
+      uint8_t hue = 90 + scale8(noise, 70);
+      
+      // Osobny szum dla jasności, aby zorza lekko pulsowała/falowała
+      // time / 10 spowalnia falowanie jasności
+      uint8_t noiseBri = inoise8(i * 20, (time / 10) + 10000);
+      // Zwiększono bazową jasność z 40 do 160, aby tryb nie wydawał się ciemny
+      uint8_t bri = 160 + scale8(noiseBri, 95);
+      
+      // Zmniejszono saturację do 220. Mniej nasycone kolory powodują włączenie
+      // wszystkich składowych LED (RGB), co drastycznie zwiększa jasność postrzeganą
+      // przez oko i nadaje zorzy bardziej realistyczny, pastelowy wygląd.
+      leds[i] = CHSV(hue, 220, bri);
+    }
+    FastLED.show();
+    delay(15);
   }
 }
 
