@@ -1,37 +1,72 @@
-# LED Strip Animation Project
+# WS2812B Arduino LED Controller
 
-This Arduino project utilizes the FastLED library to create various animated effects on a NeoPixel LED strip. The project includes functions for generating wave patterns, a rainbow wave, a Cylon animation, and a fire effect.
+An Arduino Nano controller for a 349-pixel WS2812B strip. The sketch uses
+[WS2812FX](https://github.com/kitesurfer1404/WS2812FX) for non-blocking effects,
+two push buttons for control, and EEPROM to remember the selected mode, hue,
+and effect speed.
 
-## Table of Contents
-- [Requirements](#requirements)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Customization](#customization)
-- [Contributing](#contributing)
+## Hardware
 
-## Requirements
-- Arduino board (e.g., Arduino Uno, Arduino Nano)
-- Power Supply suitable for the selected LED strip and its length
-- Push Button
-- NeoPixel LED strip (WS2812B tested)
-- FastLED library
+- Arduino Nano ATmega328P (new bootloader)
+- WS2812B LED strip (349 LEDs by default)
+- Two normally-open push buttons
+- External regulated 5 V power supply sized for the LED strip
+- Common ground between the Nano and LED power supply
+- Recommended: 300–500 ohm resistor in series with the data line and a 1000 uF
+  capacitor across the strip's 5 V and ground near its input
 
-## Installation
-1. Connect the NeoPixel LED strip to the specified pin on your Arduino board.
-2. Install the FastLED library in your Arduino IDE.
-3. Upload the provided sketch (`led_strip_animation.ino`) to your Arduino board.
+Do not power the LED strip from the Nano's 5 V pin. Connect the strip's data
+input to **D2**, its ground to the supply ground and Nano ground, and its 5 V
+input to the external supply. Connect the mode button between **D7** and ground,
+and the option button between **D8** and ground. Both button pins use the
+internal pull-up resistors.
 
-## Usage
-1. [Connect a push button](https://docs.arduino.cc/built-in-examples/digital/Button) to the specified pin on your Arduino board (default pin 2). 
-2. Power on the Arduino board.
-3. Press the button to cycle through different animation modes.
+## Build and upload
 
-## Customization
-- Adjust the `NUM_LEDS` constant in the sketch to match the number of LEDs in your strip.
-- Modify the `buttonPin` constant to match the pin where you connect the push button.
-- Experiment with different animation functions by changing the `mode` variable in the `loop` function.
-- Customize wave parameters in the `waves` function (e.g., color, amount, etc.).
-- Explore other FastLED functions to create your own animations.
+Open the PlatformIO project containing the sketch in VS Code with the
+PlatformIO extension, or use the PlatformIO CLI from that project's directory:
 
-## Contributing
-Contributions are welcome! Feel free to open issues or submit pull requests to enhance the project.
+```sh
+pio run
+pio run --target upload
+```
+
+The project depends on WS2812FX 1.4.7 or newer; PlatformIO installs the
+dependency from `platformio.ini`. Change `upload_port` in that file to match
+your Nano's port if it is not `COM21`.
+
+## Effects
+
+The mode button advances through these modes and saves the selected mode:
+
+| Mode | Effect |
+|---:|---|
+| 0 | Rainbow cycle |
+| 1 | Running lights |
+| 2 | Static hue |
+| 3 | White light |
+| 4 | Dual scan |
+| 5 | Fade |
+| 6 | Fire flicker |
+| 7 | Three independently animated color-wipe sections |
+| 8 | Rainbow chase |
+| 9 | Hyper sparkle |
+
+The defaults are 349 LEDs, data on D2, and brightness 200 (out of 255). Update
+the constants at the top of the sketch to suit a different strip or pin.
+
+## Option button
+
+- **Short press in modes 1 and 2:** advance the hue by one step.
+- **Short press in mode 3:** lower white brightness by 15; after the lowest
+  step, return to the default brightness.
+- **Short press in all other modes:** increase effect speed in 100 ms steps,
+  wrapping from 1000 ms back to 100 ms.
+- **Hold for at least 700 ms outside mode 3:** sweep smoothly through the full
+  hue range in about three seconds. The selected hue is saved when the button
+  is released. This changes the effect's primary color where the effect uses
+  one; effects with built-in rainbow or other fixed colors may not visibly
+  respond to hue.
+- **Hold in mode 3:** restore default white brightness.
+
+The selected mode, hue, and effect speed are restored from EEPROM at startup.
