@@ -1,6 +1,7 @@
 # WS2812B Arduino LED Controller
 
-An Arduino Nano controller for a 349-pixel WS2812B strip. The sketch uses
+An Arduino Nano controller for a 349-pixel WS2812B strip. The C++ source file,
+`src/WS2812B-Arduino-Button.cpp`, uses
 [WS2812FX](https://github.com/kitesurfer1404/WS2812FX) for non-blocking effects,
 two push buttons for control, and EEPROM to remember the selected mode, hue,
 and effect speed.
@@ -23,8 +24,9 @@ internal pull-up resistors.
 
 ## Build and upload
 
-Open the PlatformIO project containing the sketch in VS Code with the
-PlatformIO extension, or use the PlatformIO CLI from that project's directory:
+Open the PlatformIO project containing `src/WS2812B-Arduino-Button.cpp` in VS
+Code with the PlatformIO extension, or use the PlatformIO CLI from that
+project's directory:
 
 ```sh
 pio run
@@ -53,7 +55,7 @@ The mode button advances through these modes and saves the selected mode:
 | 9 | Hyper sparkle |
 
 The defaults are 349 LEDs, data on D2, and brightness 200 (out of 255). Update
-the constants at the top of the sketch to suit a different strip or pin.
+the constants at the top of the source file to suit a different strip or pin.
 
 ## Option button
 
